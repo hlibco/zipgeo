@@ -1,0 +1,6 @@
+venv
+node_modules
+*.log
+/static/bower_components
+/.idea
+/.sass-cache
