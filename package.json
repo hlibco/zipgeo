@@ -41,5 +41,9 @@
     "jshint": "^2.8.0",
     "karma": "^0.13.16",
     "minimist": "^1.2.0"
+  },
+  "devDependencies": {
+    "gulp-bytediff": "^1.0.0",
+    "gulp-jade": "^1.1.0"
   }
 }

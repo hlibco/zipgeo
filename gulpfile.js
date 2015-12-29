@@ -5,9 +5,12 @@
  ---------------------------------------------------------- */
 var gulp       = require('gulp');
 var plug       = require('gulp-load-plugins')();
+var bytediff   = require('gulp-bytediff');
 var concat     = require('gulp-concat');
 var connect    = require('gulp-connect');
 var del        = require('del');
+var gulpif     = require('gulp-if');
+var jade       = require('gulp-jade');
 var jscs       = require('gulp-jscs');
 var jshint     = require('gulp-jshint');
 var Karma      = require('karma').Server;
@@ -21,33 +24,12 @@ var sourcemaps = require('gulp-sourcemaps');
 var uglify     = require('gulp-uglify');
 var watch      = require('gulp-watch');
 var wrap       = require('gulp-wrap');
-
-var argv = require('minimist')(process.argv.slice(2));
+var argv       = require('minimist')(process.argv.slice(2));
 
 /* --------------------------------------------------------
  * SETTINGS
  ---------------------------------------------------------- */
 var DEV  = true;
-var SITE = 'test';
-
-//the title and icon that will be used for the Gulp notifications
-var notifyInfo = {
-  title: 'Gulp'
-  // icon: path.join(__dirname, 'gulp.png')
-};
-
-//error notification settings for plumber
-var plumberErrorHandler = {errorHandler: notify.onError({
-  title: notifyInfo.title,
-  icon: notifyInfo.icon,
-  message: 'Error: <%= error.message %>'
-})
-};
-
-var options = {
-  env: process.env.NODE_ENV || 'production',
-  debug: argv.debug
-};
 
 var PATHS = new function() {
   this._root = __dirname;
@@ -61,14 +43,16 @@ var PATHS = new function() {
   };
   this.src = {
     js: this._src + '/scripts',
-    css: this._src + '/scss',
+    css: this._src + '/styles',
+    html: this._src + '/markup',
   };
 };
 
 var BUNDLES = {
   example: {
     js: [
-      PATHS.src.js + '/zipgeo.js'
+      PATHS.src.js + '/zipgeo.js',
+      PATHS.src.js + '/example.js',
     ],
     css: [
       PATHS.src.css + '/base.normalize.scss',
@@ -82,23 +66,38 @@ var BUNDLES = {
   }
 };
 
+// Error notification settings for plumber
+var plumberErrorHandler = {errorHandler: notify.onError({
+    title: 'Gulp',
+    message: 'Error: <%= error.message %>'
+  })
+};
+
+var options = {
+  env: process.env.NODE_ENV || 'production',
+  debug: argv.debug
+};
+
 /* --------------------------------------------------------
- * CSS Related Tasks
+ * Styles Compile
  ---------------------------------------------------------- */
 function css(bundle) {
   var stamp = timestamp();
+  var toFile = 'bundle.' + bundle + '_' + stamp + '.css';
 
   // Remove old files
   del([PATHS.dist.css + '/**/bundle.' + bundle + '_*.{css,map}']);
 
-  // Sass
+  // Compile styles
   gulp.src(BUNDLES[bundle].css)
-    .pipe(concat('bundle.' + bundle + '_' + stamp + '.css'))
-    .pipe(sass().on('error', sass.logError))
     .pipe(plumber(plumberErrorHandler))
-    // .pipe(plug.bytediff.start())
-    .pipe(nano())
-    // .pipe(plug.bytediff.stop(bytediff))
+    .pipe(concat(toFile))
+    .pipe(sass().on('error', sass.logError))
+    .pipe(gulpif(!DEV,
+      bytediff.start(),
+      nano(),
+      bytediff.stop(bytediffFormatter)
+    ))
     .pipe(sourcemaps.init())
     .pipe(sourcemaps.write(PATHS.dist.maps))
     .pipe(gulp.dest(PATHS.dist.css))
@@ -106,49 +105,48 @@ function css(bundle) {
 
   // Cache busting
   gulp.src(BUNDLES[bundle].html.css)
-    .pipe(replace(new RegExp('bundle.' + bundle + '_([0-9]*)\.css'),
-                             'bundle.' + bundle + '_' + stamp + '.css'))
+    .pipe(replace(new RegExp('bundle.' + bundle + '_([0-9]*)\.css'), toFile))
     .pipe(gulp.dest(PATHS._html))
     .pipe(connect.reload());
 };
 
-gulp.task('css-example', function() { css('example'); });
-
 /* --------------------------------------------------------
- * JS Related Tasks
+ * Scripts Compile
  ---------------------------------------------------------- */
 function js(bundle) {
   var stamp = timestamp();
+  var toFile = 'bundle.' + bundle + '_' + stamp + '.js';
 
   // Remove old files
   del([PATHS.dist.js + '/**/bundle.' + bundle + '_*.{js,map}']);
 
   // Compile
   gulp.src(BUNDLES[bundle].js)
-    // .pipe(concat('bundle.' + bundle + '_' + stamp + '.js'))
-    // .pipe(plug.bytediff.start())
-    // .pipe(uglify())
-    // .pipe(wrap('(function(){"use strict";<%= contents %>})();'))
-    // .pipe(plug.bytediff.stop(bytediff))
+    .pipe(plumber(plumberErrorHandler))
+    .pipe(concat(toFile))
+    .pipe(gulpif(!DEV,
+      bytediff.start(),
+      uglify(),
+      // wrap('(function(){"use strict";<%= contents %>})();')
+      bytediff.stop(bytediffFormatter)
+    ))
     .pipe(sourcemaps.init())
     .pipe(sourcemaps.write(PATHS.dist.maps))
-    .pipe(rename('bundle.' + bundle + '_' + stamp + '.js'))
-    .pipe(gulp.dest(PATHS.dist.js));
+    .pipe(gulp.dest(PATHS.dist.js))
+    .pipe(connect.reload());
 
   // Cache busting
   gulp.src(BUNDLES[bundle].html.js)
-    .pipe(replace(new RegExp('bundle.' + bundle + '_([0-9]*)\.js'),
-                             'bundle.' + bundle + '_' + stamp + '.js'))
-    .pipe(gulp.dest(PATHS._html));
+    .pipe(replace(new RegExp('bundle.' + bundle + '_([0-9]*)\.js'), toFile))
+    .pipe(gulp.dest(PATHS._html))
+    .pipe(connect.reload());
 };
-
-gulp.task('js-example', function() { js('example'); });
 
 /* --------------------------------------------------------
  * JS Profiling and Tests
  ---------------------------------------------------------- */
 gulp.task('jshint', function() {
-  gulp.src('website/static/' + SITE + '/js/**/*.js')
+  gulp.src('website/static/js/**/*.js')
     .pipe(jshint('.jshintrc'))
     .pipe(jshint.reporter('jshint-stylish'))
     .pipe(jshint.reporter('fail'))
@@ -159,7 +157,7 @@ gulp.task('jshint', function() {
 });
 
 gulp.task('jscs', function() {
-  gulp.src('website/static/' + SITE + '/js/*.js')
+  gulp.src('website/static/js/*.js')
     .pipe(jscs())
     .pipe(notify({
       title: 'JSCS',
@@ -184,6 +182,24 @@ gulp.task('jstest', function() {
 });
 
 /* --------------------------------------------------------
+ * HTML Related Tasks
+ ---------------------------------------------------------- */
+gulp.task('html', function() {
+  return gulp.src(PATHS.src.html + '/*.{jade,html}')
+    .pipe(jade({
+      pretty: DEV ? true : false
+    }))
+    .pipe(gulp.dest(PATHS._root))
+    .pipe(connect.reload());
+});
+
+/* --------------------------------------------------------
+ * Bundle Tasks
+ ---------------------------------------------------------- */
+gulp.task('css-example', function() { css('example'); });
+gulp.task('js-example', function() { js('example'); });
+
+/* --------------------------------------------------------
  * General Tasks
  ---------------------------------------------------------- */
 /**
@@ -194,11 +210,11 @@ gulp.task('help', plug.taskListing);
 gulp.task('watch', function() {
   gulp.watch(BUNDLES.example.js, ['js-example']);
   gulp.watch(BUNDLES.example.css, ['css-example']);
-
+  gulp.watch(PATHS.src.html + '/*.*', ['html']);
 });
 
 gulp.task('livereload', function() {
-  gulp.src([PATHS.dist.js, PATHS.dist.css])
+  gulp.src([PATHS.dist.js, PATHS.dist.css, PATHS._html])
     .pipe(connect.reload());
 });
 
@@ -207,6 +223,7 @@ gulp.task('webserver', function() {
     livereload: true,
     root: ['.', PATHS._dist]
   });
+
 });
 
 gulp.task('default', ['watch','livereload','webserver']);
@@ -220,7 +237,7 @@ gulp.task('default', ['watch','livereload','webserver']);
  * @param  {Object} data - byte data
  * @return {String}      Difference in bytes, formatted
  */
-function bytediff(data) {
+function bytediffFormatter(data) {
   var percent = ((1 - data.percent) * 100).toFixed(precision = 2);
   var difference = (data.savings > 0) ? ' smaller.' : ' larger.';
   return data.fileName + ' went from ' +
@@ -231,7 +248,7 @@ function bytediff(data) {
 
 /**
  * Formatter for datetime to rename
- * bundle filename and avoid cache
+ * bundle filenames and avoid cache
  */
 function timestamp() {
   var date = new Date();

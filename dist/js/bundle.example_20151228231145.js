@@ -1,10 +1,10 @@
-var ZIPGEO = ZIPGEO || {};
-
 var Zipgeo = function(config) {
   'use strict';
 
   var options = {
-    removeMark: true,
+    id: 'js-map',
+    mark: false,
+    unit: 'miles', // miles | kilometers | meters
     map: {
       zoom: 8,
       center: '',
@@ -22,7 +22,6 @@ var Zipgeo = function(config) {
         strokeOpacity: 0.8,
         strokeWeight: 0,
         radius: 15,
-        radiusUnit: 'mile', // miles | kilometer | meter
       }
     }
   };
@@ -32,6 +31,8 @@ var Zipgeo = function(config) {
   function init(address) {
     var geocoder;
     var location;
+    var lat = '';
+    var lng = '';
 
     geocoder = new google.maps.Geocoder();
     geocoder.geocode({
@@ -40,14 +41,16 @@ var Zipgeo = function(config) {
       if (status == google.maps.GeocoderStatus.OK) {
         location = results[0].geometry.location;
 
-        console.log(location);
+        // Get Latitude and Longitude
+        lat = location.lat();
+        lng = location.lng();
 
         // Update map configs
         options.map.center = location;
 
         // Create map object
         map = new google.maps.Map(
-          document.getElementById('js-map'), options.map
+          document.getElementById(options.id), options.map
         );
 
         // Create marker object
@@ -57,13 +60,13 @@ var Zipgeo = function(config) {
         });
 
         // Remove marker from the map
-        if (options.removeMark) { marker.setMap(null); }
+        if (!options.mark) { marker.setMap(null); }
 
         // Update map circle configs
         options.map.circle.map = map;
-        if (map.circle.radiusUnit == 'mile') {
+        if (options.unit == 'miles') {
           var conversion = 0.00062137;
-        } else if (map.circle.radiusUnit == 'kilometer') {
+        } else if (options.unit == 'kilometers') {
           var conversion = 0.001;
         } else {
           var conversion = 1;
@@ -84,6 +87,6 @@ function zg() {
   Zipgeo({
     'address': '94107'
   });
-};
+}
 
-//# sourceMappingURL=maps/zipgeo.js.map
+//# sourceMappingURL=maps/bundle.example_20151228231145.js.map

@@ -1,0 +1,23 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    meta(http-equiv="x-ua-compatible",content="ie=edge")
+    title Zipgeo
+    meta(name="viewport", content="width=device-width, initial-scale=1")
+    link(rel="stylesheet", href="dist/css/bundle.example_20151229014339.css")
+    script(src="dist/js/bundle.example_20151228231145.js")
+    script(src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAdTkg8AcimBOclbl6Jpncb4lc0qYt8D3E&callback=zg",async, defer)
+  body
+    <!--[if lt IE 8]>
+    p.browserupgrade
+      You are using an <strong>outdated</strong> browser.
+      Please <a href="http://browsehappy.com/">upgrade your browser</a>
+      to improve your experience.
+    <![endif]-->
+
+    //- Add your site or application content here
+    h1
+      ='Zipcode to Geolocation (Latitude / Longitude) using GoogleMaps API'
+
+    div#js-map.map
