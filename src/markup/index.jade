@@ -1,13 +1,13 @@
 doctype html
 html
   head
-    meta(charset="utf-8")
-    meta(http-equiv="x-ua-compatible",content="ie=edge")
+    meta(charset='utf-8')
+    meta(http-equiv='x-ua-compatible',content='ie=edge')
     title Zipgeo
-    meta(name="viewport", content="width=device-width, initial-scale=1")
-    link(rel="stylesheet", href="dist/css/bundle.example_20151229014339.css")
-    script(src="dist/js/bundle.example_20151228231145.js")
-    script(src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAdTkg8AcimBOclbl6Jpncb4lc0qYt8D3E&callback=zg",async, defer)
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    link(rel='stylesheet', href='dist/css/bundle.example_20151230030826.css')
+    script(src='dist/js/bundle.example_20151230030338.js')
+    script(src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAdTkg8AcimBOclbl6Jpncb4lc0qYt8D3E&callback=zg',async, defer)
   body
     <!--[if lt IE 8]>
     p.browserupgrade
@@ -16,8 +16,18 @@ html
       to improve your experience.
     <![endif]-->
 
-    //- Add your site or application content here
+    //- App content here
     h1
       ='Zipcode to Geolocation (Latitude / Longitude) using GoogleMaps API'
 
     div#js-map.map
+
+    .stack
+      ul
+        -
+          stack = ['Jade <i>(Template)</i>',
+                   'SCSS',
+                   'NPM (JS Modules)',
+                   'Gulp (Minification, Uglify, Assets renaming)']
+        each item in stack
+          li!= item

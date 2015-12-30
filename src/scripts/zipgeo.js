@@ -1,6 +1,6 @@
 var Zipgeo = function(config) {
   'use strict';
-
+  console.log(1);
   var options = {
     id: 'js-map',
     mark: false,

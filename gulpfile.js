@@ -16,6 +16,7 @@ var jshint     = require('gulp-jshint');
 var Karma      = require('karma').Server;
 var nano       = require('gulp-cssnano');
 var notify     = require('gulp-notify');
+var path       = require('path');
 var plumber    = require('gulp-plumber');
 var rename     = require('gulp-rename');
 var replace    = require('gulp-replace');
@@ -29,8 +30,8 @@ var argv       = require('minimist')(process.argv.slice(2));
 /* --------------------------------------------------------
  * SETTINGS
  ---------------------------------------------------------- */
+var aux = {};
 var DEV  = true;
-
 var PATHS = new function() {
   this._root = __dirname;
   this._html = this._root + '';
@@ -40,6 +41,7 @@ var PATHS = new function() {
     js: this._dist + '/js',
     css: this._dist + '/css',
     maps: './maps',
+    html: this._root + '',
   };
   this.src = {
     js: this._src + '/scripts',
@@ -60,8 +62,8 @@ var BUNDLES = {
       PATHS.src.css + '/+example.scss'
     ],
     html: {
-      js: PATHS._html + '/example.html',
-      css: PATHS._html + '/example.html'
+      js: PATHS.src.html + '/index.jade',
+      css: PATHS.src.html + '/index.jade'
     }
   }
 };
@@ -75,23 +77,60 @@ var plumberErrorHandler = {errorHandler: notify.onError({
 
 var options = {
   env: process.env.NODE_ENV || 'production',
-  debug: argv.debug
+  debug: argv.debug,
+  jade: {
+    doctype: 'html',
+    pretty: DEV ? true : false
+  }
 };
+
+/* --------------------------------------------------------
+ * Pre and Post Compile
+ ---------------------------------------------------------- */
+function preCompile(bundle, type, stamp) {
+  var filename = 'bundle.' + bundle + '_';
+  var template = BUNDLES[bundle].html[type];
+
+  // Delete previous file
+  del([PATHS.dist[type] + '/**/' + filename + '*.{' + type + ',map}']);
+
+  // Change filename in the markup
+  gulp.src(template)
+    .pipe(
+      replace(
+        new RegExp(filename + '([0-9]*)\.' + type),
+                   filename + stamp + '.' + type)
+                  )
+    .pipe(
+      gulp.dest(
+        path.dirname(template)
+      )
+    );
+
+  return filename + stamp + '.' + type;
+}
+
+/* --------------------------------------------------------
+ * HTML Related Tasks
+ ---------------------------------------------------------- */
+gulp.task('html', function() {
+  gulp.src(PATHS.src.html + '/*.{jade,html}')
+    .pipe(jade(options.jade))
+    .pipe(gulp.dest(PATHS._root))
+    .pipe(connect.reload());
+});
 
 /* --------------------------------------------------------
  * Styles Compile
  ---------------------------------------------------------- */
 function css(bundle) {
   var stamp = timestamp();
-  var toFile = 'bundle.' + bundle + '_' + stamp + '.css';
-
-  // Remove old files
-  del([PATHS.dist.css + '/**/bundle.' + bundle + '_*.{css,map}']);
+  var filename = preCompile(bundle, 'css', stamp);
 
   // Compile styles
   gulp.src(BUNDLES[bundle].css)
     .pipe(plumber(plumberErrorHandler))
-    .pipe(concat(toFile))
+    .pipe(concat(filename))
     .pipe(sass().on('error', sass.logError))
     .pipe(gulpif(!DEV,
       bytediff.start(),
@@ -102,28 +141,19 @@ function css(bundle) {
     .pipe(sourcemaps.write(PATHS.dist.maps))
     .pipe(gulp.dest(PATHS.dist.css))
     .pipe(connect.reload());
-
-  // Cache busting
-  gulp.src(BUNDLES[bundle].html.css)
-    .pipe(replace(new RegExp('bundle.' + bundle + '_([0-9]*)\.css'), toFile))
-    .pipe(gulp.dest(PATHS._html))
-    .pipe(connect.reload());
-};
+}
 
 /* --------------------------------------------------------
  * Scripts Compile
  ---------------------------------------------------------- */
 function js(bundle) {
   var stamp = timestamp();
-  var toFile = 'bundle.' + bundle + '_' + stamp + '.js';
-
-  // Remove old files
-  del([PATHS.dist.js + '/**/bundle.' + bundle + '_*.{js,map}']);
+  var filename = preCompile(bundle, 'js', stamp);
 
   // Compile
   gulp.src(BUNDLES[bundle].js)
     .pipe(plumber(plumberErrorHandler))
-    .pipe(concat(toFile))
+    .pipe(concat(filename))
     .pipe(gulpif(!DEV,
       bytediff.start(),
       uglify(),
@@ -134,13 +164,7 @@ function js(bundle) {
     .pipe(sourcemaps.write(PATHS.dist.maps))
     .pipe(gulp.dest(PATHS.dist.js))
     .pipe(connect.reload());
-
-  // Cache busting
-  gulp.src(BUNDLES[bundle].html.js)
-    .pipe(replace(new RegExp('bundle.' + bundle + '_([0-9]*)\.js'), toFile))
-    .pipe(gulp.dest(PATHS._html))
-    .pipe(connect.reload());
-};
+}
 
 /* --------------------------------------------------------
  * JS Profiling and Tests
@@ -182,18 +206,6 @@ gulp.task('jstest', function() {
 });
 
 /* --------------------------------------------------------
- * HTML Related Tasks
- ---------------------------------------------------------- */
-gulp.task('html', function() {
-  return gulp.src(PATHS.src.html + '/*.{jade,html}')
-    .pipe(jade({
-      pretty: DEV ? true : false
-    }))
-    .pipe(gulp.dest(PATHS._root))
-    .pipe(connect.reload());
-});
-
-/* --------------------------------------------------------
  * Bundle Tasks
  ---------------------------------------------------------- */
 gulp.task('css-example', function() { css('example'); });
@@ -207,15 +219,11 @@ gulp.task('js-example', function() { js('example'); });
  */
 gulp.task('help', plug.taskListing);
 
+// Compile new source content
 gulp.task('watch', function() {
   gulp.watch(BUNDLES.example.js, ['js-example']);
   gulp.watch(BUNDLES.example.css, ['css-example']);
   gulp.watch(PATHS.src.html + '/*.*', ['html']);
-});
-
-gulp.task('livereload', function() {
-  gulp.src([PATHS.dist.js, PATHS.dist.css, PATHS._html])
-    .pipe(connect.reload());
 });
 
 gulp.task('webserver', function() {
@@ -226,7 +234,11 @@ gulp.task('webserver', function() {
 
 });
 
-gulp.task('default', ['watch','livereload','webserver']);
+gulp.task('bundling', [
+  'css-example', 'js-example'
+]);
+
+gulp.task('default', ['bundling','watch','webserver']);
 
 /* --------------------------------------------------------
  * Utils
