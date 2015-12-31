@@ -1,26 +1,59 @@
 @charset "UTF-8";
-
+*, html {
+  padding: 0;
+}
 body {
-  background: red;
+  background: #eee;
   text-align: center;
+}
+h1 {
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 24px;
+  padding: 24px 0;
+}
+.container {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin: 0 auto 48px;
+  max-width: 450px;
 }
 .map {
   background: #ddd;
   height: 250px;
-  margin: 30px auto;
+  margin: 48px auto;
   width: 300px;
 }
 
 .stack {
+  border-top: 1px solid #ddd;
+  margin-top: 48px;
+  padding: 24px;
   text-align: left;
 
   ul {
-    list-style: none;
-    margin: 0;
+    // list-style: none;
+    margin: 5px 0 0 18px;
     padding: 0;
   }
   li {
     line-height: 24px;
-    margin: 0;
+    // margin: 0;
+  }
+}
+
+.by {
+  border-top: 1px solid #ddd;
+  padding: 12px 24px;
+
+  a, a:visited {
+    border-bottom: 1px dotted blue;
+    color: blue;
+    text-decoration: none;
+  }
+
+  a:hover, a:focus, a:active {
+    border-bottom-style: solid;
   }
 }

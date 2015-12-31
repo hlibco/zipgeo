@@ -115,7 +115,8 @@ function preCompile(bundle, type, stamp) {
  ---------------------------------------------------------- */
 gulp.task('html', function() {
   gulp.src(PATHS.src.html + '/*.{jade,html}')
-    .pipe(jade(options.jade))
+    // .pipe(jade(options.jade))
+    .pipe(jade())
     .pipe(gulp.dest(PATHS._root))
     .pipe(connect.reload());
 });
@@ -231,7 +232,6 @@ gulp.task('webserver', function() {
     livereload: true,
     root: ['.', PATHS._dist]
   });
-
 });
 
 gulp.task('bundling', [

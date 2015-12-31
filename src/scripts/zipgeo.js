@@ -1,6 +1,6 @@
 var Zipgeo = function(config) {
   'use strict';
-  console.log(1);
+  console.log(2);
   var options = {
     id: 'js-map',
     mark: false,
@@ -27,12 +27,17 @@ var Zipgeo = function(config) {
   };
 
   var map;
+  var coordinates = {
+    lat: '',
+    lng: ''
+  };
+  function geo() {
+    return coordinates;
+  };
 
   function init(address) {
     var geocoder;
     var location;
-    var lat = '';
-    var lng = '';
 
     geocoder = new google.maps.Geocoder();
     geocoder.geocode({
@@ -42,8 +47,8 @@ var Zipgeo = function(config) {
         location = results[0].geometry.location;
 
         // Get Latitude and Longitude
-        lat = location.lat();
-        lng = location.lng();
+        coordinates.lat = location.lat();
+        coordinates.lng = location.lng();
 
         // Update map configs
         options.map.center = location;

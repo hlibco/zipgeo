@@ -44,7 +44,9 @@
   },
   "devDependencies": {
     "gulp-bytediff": "^1.0.0",
+    "gulp-embedlr": "^0.5.2",
     "gulp-jade": "^1.1.0",
+    "gulp-stylus": "^2.1.2",
     "path": "^0.12.7"
   }
 }
