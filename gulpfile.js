@@ -14,7 +14,6 @@ var jade       = require('gulp-jade');
 var jscs       = require('gulp-jscs');
 var jshint     = require('gulp-jshint');
 var Karma      = require('karma').Server;
-var nano       = require('gulp-cssnano');
 var notify     = require('gulp-notify');
 var path       = require('path');
 var plumber    = require('gulp-plumber');
@@ -22,6 +21,7 @@ var rename     = require('gulp-rename');
 var replace    = require('gulp-replace');
 var sass       = require('gulp-sass');
 var sourcemaps = require('gulp-sourcemaps');
+var stylus     = require('gulp-stylus');
 var uglify     = require('gulp-uglify');
 var watch      = require('gulp-watch');
 var wrap       = require('gulp-wrap');
@@ -57,9 +57,9 @@ var BUNDLES = {
       PATHS.src.js + '/example.js',
     ],
     css: [
-      PATHS.src.css + '/base.normalize.scss',
-      PATHS.src.css + '/base.scafolding.scss',
-      PATHS.src.css + '/+example.scss'
+      PATHS.src.css + '/base.normalize.styl',
+      PATHS.src.css + '/base.scafolding.styl',
+      PATHS.src.css + '/+example.styl'
     ],
     html: {
       js: PATHS.src.html + '/index.jade',
@@ -115,8 +115,7 @@ function preCompile(bundle, type, stamp) {
  ---------------------------------------------------------- */
 gulp.task('html', function() {
   gulp.src(PATHS.src.html + '/*.{jade,html}')
-    // .pipe(jade(options.jade))
-    .pipe(jade())
+    .pipe(jade(options.jade))
     .pipe(gulp.dest(PATHS._root))
     .pipe(connect.reload());
 });
@@ -131,13 +130,10 @@ function css(bundle) {
   // Compile styles
   gulp.src(BUNDLES[bundle].css)
     .pipe(plumber(plumberErrorHandler))
+    .pipe(stylus({
+      compress: true
+    }))
     .pipe(concat(filename))
-    .pipe(sass().on('error', sass.logError))
-    .pipe(gulpif(!DEV,
-      bytediff.start(),
-      nano(),
-      bytediff.stop(bytediffFormatter)
-    ))
     .pipe(sourcemaps.init())
     .pipe(sourcemaps.write(PATHS.dist.maps))
     .pipe(gulp.dest(PATHS.dist.css))
@@ -229,7 +225,10 @@ gulp.task('watch', function() {
 
 gulp.task('webserver', function() {
   connect.server({
-    livereload: true,
+    port: 8101,
+    livereload: {
+      port: 35720
+    },
     root: ['.', PATHS._dist]
   });
 });
