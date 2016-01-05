@@ -19,7 +19,6 @@ var path       = require('path');
 var plumber    = require('gulp-plumber');
 var rename     = require('gulp-rename');
 var replace    = require('gulp-replace');
-var sass       = require('gulp-sass');
 var sourcemaps = require('gulp-sourcemaps');
 var stylus     = require('gulp-stylus');
 var uglify     = require('gulp-uglify');
@@ -152,10 +151,8 @@ function js(bundle) {
     .pipe(plumber(plumberErrorHandler))
     .pipe(concat(filename))
     .pipe(gulpif(!DEV,
-      bytediff.start(),
-      uglify(),
-      // wrap('(function(){"use strict";<%= contents %>})();')
-      bytediff.stop(bytediffFormatter)
+      // wrap('(function(){"use strict";<%= contents %>})();'),
+      uglify()
     ))
     .pipe(sourcemaps.init())
     .pipe(sourcemaps.write(PATHS.dist.maps))
@@ -242,21 +239,6 @@ gulp.task('default', ['bundling','watch','webserver']);
 /* --------------------------------------------------------
  * Utils
  ---------------------------------------------------------- */
-/**
- * Formatter for bytediff to display the size changes after processing
- *
- * @param  {Object} data - byte data
- * @return {String}      Difference in bytes, formatted
- */
-function bytediffFormatter(data) {
-  var percent = ((1 - data.percent) * 100).toFixed(precision = 2);
-  var difference = (data.savings > 0) ? ' smaller.' : ' larger.';
-  return data.fileName + ' went from ' +
-    (data.startSize / 1000).toFixed(2) +
-    ' kB to ' + (data.endSize / 1000).toFixed(2) + ' kB' +
-    ' and is ' + percent + '%' + difference;
-}
-
 /**
  * Formatter for datetime to rename
  * bundle filenames and avoid cache
